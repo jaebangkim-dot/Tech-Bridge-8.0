@@ -1,0 +1,1328 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduBridge AI - Tech Digest to Lesson Plan Studio</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Marked.js for Markdown rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- Google Fonts Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .prose pre {
+            background-color: #1e293b;
+            color: #f8fafc;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            overflow-x: auto;
+        }
+        .prose h1, .prose h2, .prose h3 {
+            color: #0f172a;
+            font-weight: 700;
+        }
+        .prose ul {
+            list-style-type: disc;
+            padding-left: 1.25rem;
+        }
+        .prose ol {
+            list-style-type: decimal;
+            padding-left: 1.25rem;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="h-full flex flex-col text-slate-800 antialiased selection:bg-indigo-500 selection:text-white">
+
+    <!-- Toast Notification Overlay -->
+    <div id="toastNotification" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none flex items-center gap-3 px-4 py-3 rounded-xl shadow-xl border text-sm font-semibold text-white bg-slate-900 border-slate-700">
+        <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400 text-lg"></i>
+        <span id="toastMessage">Action completed successfully</span>
+    </div>
+
+    <!-- Custom Confirmation Modal -->
+    <div id="confirmModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-slate-100 space-y-4">
+            <div class="flex items-center gap-3 text-amber-500">
+                <div class="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center text-lg font-bold">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+                <h3 class="font-bold text-slate-800 text-base">Please Confirm</h3>
+            </div>
+            <p id="confirmModalMessage" class="text-xs text-slate-600 leading-relaxed">Are you sure you want to proceed?</p>
+            <div class="flex justify-end space-x-2 pt-2">
+                <button onclick="closeConfirmModal(false)" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition">Cancel</button>
+                <button id="confirmModalActionBtn" class="px-4 py-2 text-xs font-bold bg-red-600 hover:bg-red-700 text-white rounded-lg transition shadow-sm">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Header Navbar -->
+    <header class="bg-indigo-900 text-white shadow-md sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Logo & Branding -->
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-400 flex items-center justify-center shadow-lg text-white font-bold text-xl">
+                        <i class="fa-solid fa-graduation-cap"></i>
+                    </div>
+                    <div>
+                        <span class="text-xl font-extrabold tracking-tight bg-gradient-to-r from-white via-indigo-100 to-indigo-300 bg-clip-text text-transparent">EduBridge AI</span>
+                        <span class="hidden sm:inline-block text-xs bg-indigo-800/80 text-indigo-200 px-2.5 py-0.5 rounded-full ml-2 border border-indigo-700">Digest to Lesson Studio</span>
+                    </div>
+                </div>
+
+                <!-- Global Action & API Key Config -->
+                <div class="flex items-center space-x-3">
+                    <button onclick="toggleApiKeyModal()" class="flex items-center space-x-1.5 text-xs bg-indigo-800 hover:bg-indigo-700 text-indigo-100 px-3 py-1.5 rounded-lg border border-indigo-700 transition">
+                        <i class="fa-solid fa-key text-amber-400"></i>
+                        <span id="apiKeyStatusLabel">API Settings</span>
+                    </button>
+                    <a href="#digestSection" onclick="switchTab('digestTab')" class="hidden md:flex items-center space-x-1 text-xs bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-3 py-1.5 rounded-lg transition shadow-sm">
+                        <i class="fa-solid fa-plus"></i>
+                        <span>New Lesson</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main App Layout Container -->
+    <div class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col gap-6">
+
+        <!-- Navigation Tabs -->
+        <nav class="flex space-x-2 border-b border-slate-200 pb-2 overflow-x-auto custom-scrollbar">
+            <button onclick="switchTab('digestTab')" id="tabBtn-digestTab" class="tab-btn flex items-center space-x-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition bg-indigo-600 text-white shadow-sm">
+                <i class="fa-solid fa-newspaper"></i>
+                <span>1. Tech Digest & Parsing</span>
+            </button>
+            <button onclick="switchTab('studioTab')" id="tabBtn-studioTab" class="tab-btn flex items-center space-x-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition text-slate-600 hover:bg-slate-100">
+                <i class="fa-solid fa-wand-magic-sparkles text-indigo-500"></i>
+                <span>2. Lesson Plan Generator</span>
+            </button>
+            <button onclick="switchTab('explainerTab')" id="tabBtn-explainerTab" class="tab-btn flex items-center space-x-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition text-slate-600 hover:bg-slate-100">
+                <i class="fa-solid fa-child-reaching text-amber-500"></i>
+                <span>3. Student Explainer & Audio</span>
+            </button>
+            <button onclick="switchTab('libraryTab')" id="tabBtn-libraryTab" class="tab-btn flex items-center space-x-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition text-slate-600 hover:bg-slate-100">
+                <i class="fa-solid fa-bookmark text-emerald-500"></i>
+                <span>4. Saved Library</span>
+                <span id="savedCountBadge" class="bg-slate-200 text-slate-700 text-xs px-2 py-0.5 rounded-full font-bold ml-1">0</span>
+            </button>
+        </nav>
+
+        <!-- TAB 1: TECH DIGEST INPUT & PARSER -->
+        <div id="digestTab" class="tab-content space-y-6">
+            <!-- Hero Banner -->
+            <div class="bg-gradient-to-r from-indigo-900 via-indigo-800 to-purple-900 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
+                <div class="relative z-10 max-w-3xl space-y-2">
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-indigo-500/30 text-indigo-200 border border-indigo-400/30">
+                        <i class="fa-solid fa-robot"></i> Powered by Gemini 3 Flash
+                    </span>
+                    <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">Turn Daily Tech Digests into Classroom Magic</h1>
+                    <p class="text-indigo-200 text-sm sm:text-base">Paste your daily AI & technology updates or enter target URLs (websites & videos) to let Gemini search, summarize, and parse today's top STEM news into teacher-ready lessons!</p>
+                </div>
+                <div class="absolute -right-10 -bottom-10 w-64 h-64 bg-purple-500/10 rounded-full blur-2xl pointer-events-none"></div>
+            </div>
+
+            <!-- Input Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- Input Box Panel -->
+                <div class="lg:col-span-6 bg-white rounded-2xl border border-slate-200 shadow-sm p-5 flex flex-col space-y-4">
+                    <div class="flex items-center justify-between">
+                        <label class="font-bold text-slate-800 text-base flex items-center gap-2">
+                            <i class="fa-solid fa-file-lines text-indigo-600"></i>
+                            Raw Daily Digest / News Text
+                        </label>
+                        <div class="flex items-center space-x-2">
+                            <button onclick="loadSampleDigest()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1 rounded-md font-medium transition">
+                                <i class="fa-solid fa-rotate-left text-slate-500 mr-1"></i>Reset Sample
+                            </button>
+                            <button onclick="fetchLiveDigestWithSearch(event)" class="text-xs bg-purple-50 hover:bg-purple-100 text-purple-700 px-2.5 py-1 rounded-md font-medium border border-purple-200 transition">
+                                <i class="fa-solid fa-magnifying-glass text-purple-600 mr-1"></i>Fetch Fresh News
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Target Resource URLs Input Window -->
+                    <div class="bg-indigo-50/60 border border-indigo-100 p-3 rounded-xl space-y-1.5">
+                        <div class="flex items-center justify-between">
+                            <label class="font-bold text-xs text-indigo-950 flex items-center gap-1.5">
+                                <i class="fa-solid fa-link text-indigo-600"></i> Target Resources (Websites & Video Links)
+                            </label>
+                            <span class="text-[10px] text-indigo-600 font-medium">Optional • 1 link per line</span>
+                        </div>
+                        <textarea id="targetUrlsInput" rows="2" class="w-full text-xs p-2.5 bg-white border border-indigo-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition custom-scrollbar font-mono placeholder:text-slate-400" placeholder="e.g. https://youtube.com/watch?v=... or https://news.mit.edu/2026/..."></textarea>
+                        <p class="text-[11px] text-slate-500">Provide specific web pages or YouTube URLs above, then click <strong>"Fetch Fresh News"</strong> to generate 4 focused summaries from those sources.</p>
+                    </div>
+
+                    <textarea id="digestInput" class="w-full flex-1 min-h-[260px] p-4 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:bg-white transition custom-scrollbar font-mono leading-relaxed" placeholder="Paste daily tech update text here..."></textarea>
+
+                    <div class="pt-2 flex items-center justify-between gap-3">
+                        <button onclick="clearDigestInput()" class="text-xs text-slate-500 hover:text-red-600 px-3 py-2 font-medium">
+                            <i class="fa-solid fa-trash mr-1"></i> Clear Text
+                        </button>
+                        <button onclick="parseDigestWithGemini()" id="parseDigestBtn" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-xl shadow-md transition flex items-center justify-center space-x-2">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i>
+                            <span>Parse Digest for Teachers</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Parsed Stories Output Panel -->
+                <div class="lg:col-span-6 bg-white rounded-2xl border border-slate-200 shadow-sm p-5 flex flex-col space-y-4">
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                        <div>
+                            <h2 class="font-bold text-slate-800 text-base flex items-center gap-2">
+                                <i class="fa-solid fa-list-check text-emerald-600"></i>
+                                Parsed Stories & Pedagogical Angle
+                            </h2>
+                            <p class="text-xs text-slate-500">Selected technology highlights ready to turn into lessons</p>
+                        </div>
+                        <span id="parsedCountBadge" class="bg-indigo-100 text-indigo-700 text-xs px-2.5 py-1 rounded-full font-bold">0 Selected</span>
+                    </div>
+
+                    <div id="parsedStoriesContainer" class="flex-1 overflow-y-auto max-h-[460px] space-y-3 custom-scrollbar pr-1">
+                        <div class="text-center py-16 px-4 border-2 border-dashed border-slate-200 rounded-xl bg-slate-50/50">
+                            <div class="w-12 h-12 rounded-full bg-indigo-50 text-indigo-500 flex items-center justify-center mx-auto mb-3 text-xl">
+                                <i class="fa-solid fa-microchip"></i>
+                            </div>
+                            <h3 class="font-semibold text-slate-700 text-sm">No Digest Parsed Yet</h3>
+                            <p class="text-xs text-slate-500 max-w-xs mx-auto mt-1">Click <strong>"Parse Digest for Teachers"</strong> to break down the news into classroom subjects, key concepts, and age ratings!</p>
+                        </div>
+                    </div>
+
+                    <div id="parsedActions" class="hidden pt-2 border-t border-slate-100 flex items-center justify-between">
+                        <span class="text-xs text-slate-500"><i class="fa-solid fa-circle-info text-indigo-500 mr-1"></i>Select a story to jump into the Lesson Studio</span>
+                        <button onclick="sendSelectedToStudio()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-4 py-2.5 rounded-lg transition shadow-sm flex items-center space-x-1.5">
+                            <span>Send Selected to Studio</span>
+                            <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: LESSON PLAN GENERATOR STUDIO -->
+        <div id="studioTab" class="tab-content hidden space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                
+                <!-- Lesson Builder Controls -->
+                <div class="lg:col-span-5 bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-5">
+                    <div class="border-b border-slate-100 pb-3">
+                        <h2 class="font-bold text-slate-800 text-lg flex items-center gap-2">
+                            <i class="fa-solid fa-sliders text-indigo-600"></i>
+                            Lesson Parameters
+                        </h2>
+                        <p class="text-xs text-slate-500">Configure parameters for Gemini to draft your full lesson plan</p>
+                    </div>
+
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Topic / Core Source Story</label>
+                        <input id="studioTopicInput" type="text" class="w-full text-sm p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:bg-white transition" placeholder="e.g. MEGATRON Supercomputer & Early Stars Simulation">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="space-y-1.5">
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Grade Level</label>
+                            <select id="studioGradeSelect" class="w-full text-sm p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                                <option value="Middle School (Grades 6-8)">Middle School (6-8)</option>
+                                <option value="High School (Grades 9-12)" selected>High School (9-12)</option>
+                                <option value="Elementary (Grades 3-5)">Elementary (3-5)</option>
+                                <option value="Higher Education / AP">Higher Ed / AP Tech</option>
+                            </select>
+                        </div>
+
+                        <div class="space-y-1.5">
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Subject Area</label>
+                            <select id="studioSubjectSelect" class="w-full text-sm p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                                <option value="Computer Science & AI Literacy">CS & AI Literacy</option>
+                                <option value="Physics & Space Science">Physics & Science</option>
+                                <option value="Ethics, Policy & Digital Citizenship">Ethics & Society</option>
+                                <option value="General STEM & History of Science">STEM & History</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="space-y-1.5">
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Duration</label>
+                            <select id="studioDurationSelect" class="w-full text-sm p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                                <option value="15-Min Quick Discussion / Warm-up">15 Min Warm-up</option>
+                                <option value="45-Min Standard Period" selected>45 Min Period</option>
+                                <option value="90-Min Block / Workshop">90 Min Block</option>
+                            </select>
+                        </div>
+
+                        <div class="space-y-1.5">
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Teaching Model</label>
+                            <select id="studioPedagogySelect" class="w-full text-sm p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                                <option value="5E Inquiry Framework (Engage, Explore, Explain, Elaborate, Evaluate)" selected>5E Instructional Model</option>
+                                <option value="Socratic Discussion & Ethical Debate">Socratic & Debate</option>
+                                <option value="Project-Based Learning (PBL) Challenge">Project-Based (PBL)</option>
+                                <option value="Direct Instruction & Guided Practice">Direct Instruction</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="space-y-2">
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Include Sections</label>
+                        <div class="grid grid-cols-2 gap-2 text-xs">
+                            <label class="flex items-center space-x-2 bg-slate-50 p-2 rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-100">
+                                <input type="checkbox" id="incWarmup" checked class="rounded text-indigo-600 focus:ring-indigo-500">
+                                <span>Hook & Warm-up</span>
+                            </label>
+                            <label class="flex items-center space-x-2 bg-slate-50 p-2 rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-100">
+                                <input type="checkbox" id="incActivity" checked class="rounded text-indigo-600 focus:ring-indigo-500">
+                                <span>Hands-on Activity</span>
+                            </label>
+                            <label class="flex items-center space-x-2 bg-slate-50 p-2 rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-100">
+                                <input type="checkbox" id="incQuiz" checked class="rounded text-indigo-600 focus:ring-indigo-500">
+                                <span>Quiz & Exit Ticket</span>
+                            </label>
+                            <label class="flex items-center space-x-2 bg-slate-50 p-2 rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-100">
+                                <input type="checkbox" id="incDiff" checked class="rounded text-indigo-600 focus:ring-indigo-500">
+                                <span>Differentiation</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Custom Teacher Directives (Optional)</label>
+                        <textarea id="studioCustomNotes" rows="2" class="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:bg-white transition" placeholder="e.g. Include a roleplay activity on ethical AI, emphasis on vocabulary definitions..."></textarea>
+                    </div>
+
+                    <button onclick="generateLessonPlanWithGemini()" id="generateLessonBtn" class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-extrabold py-3.5 px-6 rounded-xl shadow-lg transition flex items-center justify-center space-x-2 text-sm">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+                        <span>Generate Complete Lesson Plan</span>
+                    </button>
+                </div>
+
+                <!-- Generated Lesson Display -->
+                <div class="lg:col-span-7 bg-white rounded-2xl border border-slate-200 shadow-sm p-6 flex flex-col space-y-4 min-h-[600px]">
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                        <div class="flex items-center space-x-2">
+                            <i class="fa-solid fa-file-contract text-indigo-600 text-lg"></i>
+                            <h2 class="font-bold text-slate-800 text-base">Lesson Plan Document</h2>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <button onclick="copyLessonToClipboard()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg font-semibold transition flex items-center gap-1">
+                                <i class="fa-regular fa-copy"></i> Copy Text
+                            </button>
+                            <button onclick="window.saveLessonToLibrary()" class="text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 px-3 py-1.5 rounded-lg font-semibold transition flex items-center gap-1">
+                                <i class="fa-solid fa-bookmark"></i> Save to Library
+                            </button>
+                            <button onclick="window.print()" class="text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 px-3 py-1.5 rounded-lg font-semibold transition flex items-center gap-1">
+                                <i class="fa-solid fa-print"></i> Print
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="lessonPlanOutput" class="flex-1 prose prose-indigo max-w-none text-slate-700 text-sm overflow-y-auto max-h-[620px] custom-scrollbar p-2">
+                        <div class="text-center py-28 px-6 border-2 border-dashed border-slate-200 rounded-2xl bg-slate-50/50">
+                            <div class="w-16 h-16 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto mb-4 text-2xl shadow-inner">
+                                <i class="fa-solid fa-book-open-reader"></i>
+                            </div>
+                            <h3 class="font-bold text-slate-800 text-base">Lesson Plan Canvas Ready</h3>
+                            <p class="text-xs text-slate-500 max-w-sm mx-auto mt-1">Select or enter a topic on the left and click <strong>Generate Complete Lesson Plan</strong>. Gemini will construct a fully structured instructional plan!</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 3: STUDENT EXPLAINER & AUDIO (TTS) -->
+        <div id="explainerTab" class="tab-content hidden space-y-6">
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-6 max-w-4xl mx-auto">
+                <div>
+                    <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+                        <i class="fa-solid fa-child-reaching text-amber-500"></i>
+                        Student Explainer & Spoken Overview (TTS)
+                    </h2>
+                    <p class="text-xs text-slate-500 mt-1">Generate simplified student-facing summaries, fun analogies, and listen to spoken audio announcements using Gemini Speech TTS!</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Topic or Concept to Explain</label>
+                        <input id="explainerTopic" type="text" class="w-full text-sm p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:bg-white transition" placeholder="e.g. Superfluid Helium Qubits in Quantum Computing">
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Target Student Grade Level</label>
+                        <select id="explainerGrade" class="w-full text-sm p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:bg-white transition">
+                            <option value="Elementary School Student (Grade 5 level - simple analogies)">Grade 5 (Simple Analogies)</option>
+                            <option value="Middle Schooler (Grade 8 level - clear & engaging)" selected>Grade 8 (Clear & Engaging)</option>
+                            <option value="High School Student (Grade 11 level - conceptual clarity)">Grade 11 (Conceptual & Precise)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="flex gap-3">
+                    <button onclick="generateStudentExplanation()" id="genExplainerBtn" class="flex-1 bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 px-5 rounded-xl shadow transition flex items-center justify-center space-x-2 text-sm">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>Create Student-Friendly Explanation</span>
+                    </button>
+                </div>
+
+                <!-- Explanation Box -->
+                <div id="explainerResultBox" class="hidden space-y-4 border-t border-slate-100 pt-5">
+                    <div class="bg-amber-50/70 border border-amber-200 rounded-2xl p-5 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold text-amber-800 uppercase tracking-wider flex items-center gap-1.5">
+                                <i class="fa-solid fa-comment-dots"></i> Student-Facing Script
+                            </span>
+                            <button onclick="copyExplainerText()" class="text-xs bg-white text-amber-900 border border-amber-300 px-2.5 py-1 rounded-md font-medium hover:bg-amber-100">
+                                <i class="fa-regular fa-copy mr-1"></i>Copy Text
+                            </button>
+                        </div>
+                        <div id="explainerText" class="text-sm text-slate-800 leading-relaxed font-normal"></div>
+                    </div>
+
+                    <!-- Audio Generator Section -->
+                    <div class="bg-indigo-900 text-white rounded-2xl p-5 space-y-4 shadow-md">
+                        <div class="flex items-center justify-between flex-wrap gap-2">
+                            <h3 class="font-bold text-sm flex items-center gap-2">
+                                <i class="fa-solid fa-volume-high text-amber-400"></i>
+                                Audio Announcement Generator (Gemini Speech TTS)
+                            </h3>
+                            <select id="ttsVoiceSelect" class="bg-indigo-800 text-indigo-100 border border-indigo-700 text-xs rounded-lg px-2.5 py-1 focus:ring-2 focus:ring-amber-400 outline-none">
+                                <option value="Zephyr" selected>Zephyr (Bright & Clear)</option>
+                                <option value="Puck">Puck (Upbeat)</option>
+                                <option value="Kore">Kore (Firm & Authoritative)</option>
+                                <option value="Aoede">Aoede (Breezy)</option>
+                                <option value="Fenrir">Fenrir (Excitable)</option>
+                            </select>
+                        </div>
+                        <p class="text-xs text-indigo-200">Convert the student explanation into high-quality spoken audio to play in class or share on learning management systems.</p>
+                        <div class="flex flex-col sm:flex-row items-center gap-3">
+                            <button onclick="generateAudioTTS()" id="ttsBtn" class="w-full sm:w-auto bg-amber-500 hover:bg-amber-400 text-slate-900 font-bold text-xs py-2.5 px-5 rounded-xl transition shadow flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-play"></i>
+                                <span>Generate Spoken Audio</span>
+                            </button>
+                            <div id="ttsAudioContainer" class="flex-1 w-full"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 4: SAVED LESSON LIBRARY -->
+        <div id="libraryTab" class="tab-content hidden space-y-6">
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">
+                <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+                            <i class="fa-solid fa-bookmark text-emerald-600"></i>
+                            Saved Teacher Lessons Library
+                        </h2>
+                        <p class="text-xs text-slate-500">Access and export your previously generated lesson plans stored locally</p>
+                    </div>
+                    <button onclick="window.clearAllSavedLessons()" class="text-xs text-red-600 hover:underline font-semibold">
+                        Clear All Library
+                    </button>
+                </div>
+
+                <div id="libraryItemsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <!-- Library Items Rendered Here -->
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- API KEY & SETTINGS MODAL -->
+    <div id="apiKeyModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 class="font-bold text-slate-800 text-base flex items-center gap-2">
+                    <i class="fa-solid fa-key text-amber-500"></i>
+                    Gemini API Settings
+                </h3>
+                <button onclick="toggleApiKeyModal()" class="text-slate-400 hover:text-slate-600 text-lg">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <p class="text-xs text-slate-600 leading-relaxed">
+                This app uses <strong>gemini-3-flash-preview</strong> for text generation and <strong>gemini-2.5-flash-preview-tts</strong> for audio synthesis. You can enter a custom Gemini key below.
+            </p>
+
+            <div class="space-y-1.5">
+                <label class="block text-xs font-bold text-slate-700">Custom Gemini API Key</label>
+                <input id="customApiKeyInput" type="password" class="w-full text-sm p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500" placeholder="AIzaSy... (optional)">
+            </div>
+
+            <div class="flex justify-end space-x-2 pt-2">
+                <button onclick="saveApiKeySetting()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition">
+                    Save Settings
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN APPLICATION LOGIC SCRIPT -->
+    <script>
+        /* Shared Global Scope Initialization */
+        function safeGetLocalStorage(key, fallback = null) {
+            try {
+                return localStorage.getItem(key) || fallback;
+            } catch (e) {
+                console.warn('LocalStorage access restricted:', e);
+                return fallback;
+            }
+        }
+
+        function safeSetLocalStorage(key, value) {
+            try {
+                localStorage.setItem(key, value);
+            } catch (e) {
+                console.warn('LocalStorage write restricted:', e);
+            }
+        }
+
+        window.savedLessons = JSON.parse(safeGetLocalStorage('edubridge_saved_lessons', '[]'));
+        window.parsedStories = [];
+        window.selectedStory = null;
+        window.activeTab = 'digestTab';
+        window.confirmModalCallback = null;
+        window.customApiKeyOverride = safeGetLocalStorage('edubridge_custom_api_key', '');
+
+        /* Toast Notifications Handler */
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toastNotification');
+            const msgEl = document.getElementById('toastMessage');
+            const iconEl = document.getElementById('toastIcon');
+
+            if (!toast || !msgEl || !iconEl) return;
+
+            msgEl.innerText = message;
+            if (type === 'error') {
+                iconEl.className = 'fa-solid fa-circle-xmark text-red-400 text-lg';
+            } else if (type === 'warning') {
+                iconEl.className = 'fa-solid fa-triangle-exclamation text-amber-400 text-lg';
+            } else {
+                iconEl.className = 'fa-solid fa-circle-check text-emerald-400 text-lg';
+            }
+
+            toast.classList.remove('translate-y-20', 'opacity-0', 'pointer-events-none');
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0', 'pointer-events-none');
+            }, 3000);
+        }
+
+        /* Confirmation Modal Handler */
+        function showConfirmModal(message, onConfirm) {
+            document.getElementById('confirmModalMessage').innerText = message;
+            window.confirmModalCallback = onConfirm;
+            document.getElementById('confirmModal').classList.remove('hidden');
+        }
+
+        function closeConfirmModal(accepted) {
+            document.getElementById('confirmModal').classList.add('hidden');
+            if (accepted && typeof window.confirmModalCallback === 'function') {
+                window.confirmModalCallback();
+            }
+            window.confirmModalCallback = null;
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const btn = document.getElementById('confirmModalActionBtn');
+            if (btn) btn.addEventListener('click', () => closeConfirmModal(true));
+        });
+
+        /* Sample Initial Digest */
+        const DEFAULT_SAMPLE_DIGEST = `🤖 **Daily AI & Tech Digest**
+
+Here are today's top highlights from leading science and technology publications:
+
+---
+
+### 1. 🌌 MEGATRON Project Simulates the Lighting of the Early Universe
+Supercomputers running the **MEGATRON simulation** modeled how the first stars ignited after the Big Bang, seeding early space with fundamental elements like carbon, oxygen, and iron. These ultra-detailed models help bridge observations from the James Webb Space Telescope with chemical clues found in ancient galaxies.
+*Source: ScienceDaily*
+
+### 2. 🛡 Apollo 13 Legend Milt Windler Passes Away at 94
+Aerospace historian communities and *Ars Technica* honored **Milt Windler**, one of four lead NASA flight directors who safely guided the damaged Apollo 13 crew back to Earth in 1970. He also directed Trans-Lunar Injection burns during Apollo 8, human history's first crewed voyage beyond Earth orbit.
+*Source: Ars Technica*
+
+### 3. 🚨 Legal & Security Frameworks Grapple with Autonomous AI Agents
+As autonomous AI agents capable of executing multi-step web tasks grow in popularity, new cybersecurity reports highlight instances of agents attempting independent vulnerability probes when blocked by websites. International regulators and public-sector toolkits are swiftly moving to establish accountability frameworks.
+*Source: WIRED / AI Policy Briefs*
+
+### 4. 🧠 Superfluid Helium Qubits Target 100x Lower Quantum Error Rates
+Physicists proposed a novel qubit architecture built using **superfluid helium**. By shielding delicate quantum information from ambient electromagnetic noise, the platform could cut quantum computing error rates by roughly 100 times compared to standard superconducting systems.
+*Source: ScienceDaily / Physics News*`;
+
+        function loadSampleDigest() {
+            document.getElementById('digestInput').value = DEFAULT_SAMPLE_DIGEST;
+        }
+
+        function clearDigestInput() {
+            document.getElementById('digestInput').value = '';
+            document.getElementById('targetUrlsInput').value = '';
+        }
+
+        function updateSavedCountBadge() {
+            const badge = document.getElementById('savedCountBadge');
+            if (badge) badge.innerText = window.savedLessons.length;
+        }
+
+        function renderSavedLibrary() {
+            const grid = document.getElementById('libraryItemsGrid');
+            if (!grid) return;
+
+            if (window.savedLessons.length === 0) {
+                grid.innerHTML = `
+                    <div class="col-span-full text-center py-16 text-slate-400">
+                        <i class="fa-solid fa-folder-open text-4xl mb-2 text-slate-300"></i>
+                        <p class="text-sm font-medium">No saved lessons in your library yet.</p>
+                        <p class="text-xs text-slate-400 mt-1">Generated lesson plans will appear here once saved.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            grid.innerHTML = window.savedLessons.map((item, idx) => `
+                <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col justify-between space-y-3 hover:shadow-md transition">
+                    <div>
+                        <div class="flex items-center justify-between text-[11px] text-slate-400 mb-1">
+                            <span>${item.date || 'Recent'}</span>
+                            <span class="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded font-bold">${item.subject || 'STEM'}</span>
+                        </div>
+                        <h3 class="font-bold text-slate-800 text-sm line-clamp-2">${item.title}</h3>
+                        <p class="text-xs text-slate-500 mt-1">${item.grade || ''}</p>
+                    </div>
+                    <div class="flex items-center space-x-2 pt-2 border-t border-slate-200">
+                        <button onclick="viewSavedLesson(${idx})" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs py-1.5 px-3 rounded-lg transition">
+                            View Plan
+                        </button>
+                        <button onclick="window.deleteSavedLesson('${item.id}')" class="text-xs text-red-500 hover:text-red-700 p-1.5">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function viewSavedLesson(idx) {
+            const item = window.savedLessons[idx];
+            if (!item) return;
+
+            const outputEl = document.getElementById('lessonPlanOutput');
+            outputEl.innerHTML = marked.parse(item.content);
+            outputEl.dataset.rawMarkdown = item.content;
+            outputEl.dataset.topicTitle = item.title;
+
+            document.getElementById('studioTopicInput').value = item.title;
+            switchTab('studioTab');
+            showToast("Loaded saved lesson into editor.");
+        }
+
+        /* --- TAB SWITCHING --- */
+        function switchTab(tabId) {
+            window.activeTab = tabId;
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('bg-indigo-600', 'text-white', 'shadow-sm');
+                btn.classList.add('text-slate-600', 'hover:bg-slate-100');
+            });
+
+            const activeContent = document.getElementById(tabId);
+            if (activeContent) activeContent.classList.remove('hidden');
+
+            const activeBtn = document.getElementById(`tabBtn-${tabId}`);
+            if (activeBtn) {
+                activeBtn.classList.remove('text-slate-600', 'hover:bg-slate-100');
+                activeBtn.classList.add('bg-indigo-600', 'text-white', 'shadow-sm');
+            }
+        }
+
+        function toggleApiKeyModal() {
+            const modal = document.getElementById('apiKeyModal');
+            modal.classList.toggle('hidden');
+            if (!modal.classList.contains('hidden')) {
+                document.getElementById('customApiKeyInput').value = window.customApiKeyOverride || '';
+            }
+        }
+
+        function updateApiKeyStatusUI() {
+            const label = document.getElementById('apiKeyStatusLabel');
+            if (label) {
+                label.innerText = window.customApiKeyOverride ? "Key Configured" : "API Settings";
+            }
+        }
+
+        function saveApiKeySetting() {
+            const key = document.getElementById('customApiKeyInput').value.trim();
+            window.customApiKeyOverride = key;
+            safeSetLocalStorage('edubridge_custom_api_key', key);
+
+            toggleApiKeyModal();
+            updateApiKeyStatusUI();
+            showToast("API Key saved successfully!");
+        }
+
+        /* --- API HELPER WITH EXPONENTIAL BACKOFF --- */
+        async function fetchGeminiAPI(endpoint, payload) {
+            const customKey = window.customApiKeyOverride || safeGetLocalStorage('edubridge_custom_api_key', '');
+            const url = `https://generativelanguage.googleapis.com/v1beta/${endpoint}?key=${customKey}`;
+
+            let retries = 3;
+            let delay = 1000;
+
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const res = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!res.ok) {
+                        const errJson = await res.json().catch(() => ({}));
+                        throw new Error(errJson.error?.message || `API HTTP error ${res.status}`);
+                    }
+
+                    return await res.json();
+                } catch (err) {
+                    if (i === retries - 1) throw err;
+                    await new Promise(r => setTimeout(r, delay));
+                    delay *= 2;
+                }
+            }
+        }
+
+        async function fetchLiveDigestWithSearch(event) {
+            const targetUrls = document.getElementById('targetUrlsInput').value.trim();
+            const btn = event ? event.currentTarget : null;
+            const originalHtml = btn ? btn.innerHTML : '';
+
+            if (btn) {
+                btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-1"></i> Fetching...`;
+                btn.disabled = true;
+            }
+
+            try {
+                let userQuery = "Provide a digest of the top 4 latest major STEM and technology news stories from today with summaries, sources, and educational insights.";
+                if (targetUrls) {
+                    userQuery = `Summarize and synthesize the core educational and tech highlights from the following target links or topics into 4 clean digest stories:\n${targetUrls}`;
+                }
+
+                const payload = {
+                    contents: [{ parts: [{ text: userQuery }] }],
+                    tools: [{ "google_search": {} }],
+                    systemInstruction: { parts: [{ text: "Act as an educational science & tech news aggregator and analyst. Synthesize source materials into 4 clear news summaries for educators." }] }
+                };
+
+                const result = await fetchGeminiAPI('models/gemini-3-flash-preview:generateContent', payload);
+                const text = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+                if (text) {
+                    document.getElementById('digestInput').value = text;
+                    showToast("Fresh news fetched successfully!");
+                } else {
+                    showToast("Unable to fetch fresh news. Please check target links.", "warning");
+                }
+            } catch (err) {
+                showToast("Error fetching news: " + err.message, "error");
+            } finally {
+                if (btn) {
+                    btn.innerHTML = originalHtml;
+                    btn.disabled = false;
+                }
+            }
+        }
+
+        async function parseDigestWithGemini() {
+            const text = document.getElementById('digestInput').value.trim();
+            if (!text) {
+                showToast("Please paste or fetch a tech digest first.", "warning");
+                return;
+            }
+
+            const btn = document.getElementById('parseDigestBtn');
+            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i>Parsing Digest...`;
+            btn.disabled = true;
+
+            const payload = {
+                contents: [{
+                    parts: [{ text: `Analyze and extract key stories from this STEM/tech digest for educators:\n\n${text}` }]
+                }],
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: "ARRAY",
+                        items: {
+                            type: "OBJECT",
+                            properties: {
+                                "title": { "type": "STRING" },
+                                "summary": { "type": "STRING" },
+                                "pedagogicalAngle": { "type": "STRING" },
+                                "subject": { "type": "STRING" },
+                                "grade": { "type": "STRING" },
+                                "keyConcepts": { "type": "ARRAY", "items": { "type": "STRING" } }
+                            },
+                            required: ["title", "summary", "pedagogicalAngle", "subject", "grade", "keyConcepts"]
+                        }
+                    }
+                },
+                systemInstruction: {
+                    parts: [{ text: "Act as an educational technology curriculum specialist. Parse raw tech news into structured teacher lesson seeds." }]
+                }
+            };
+
+            try {
+                const result = await fetchGeminiAPI('models/gemini-3-flash-preview:generateContent', payload);
+                const jsonText = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (jsonText) {
+                    window.parsedStories = JSON.parse(jsonText);
+                    window.selectedStory = 0;
+                    renderParsedStories();
+                    document.getElementById('parsedCountBadge').innerText = `${window.parsedStories.length} Parsed`;
+                    document.getElementById('parsedActions').classList.remove('hidden');
+                    showToast(`Successfully parsed ${window.parsedStories.length} stories!`);
+                }
+            } catch (err) {
+                showToast("Error parsing digest: " + err.message, "error");
+            } finally {
+                btn.innerHTML = `<i class="fa-solid fa-wand-magic-sparkles"></i><span>Parse Digest for Teachers</span>`;
+                btn.disabled = false;
+            }
+        }
+
+        function renderParsedStories() {
+            const container = document.getElementById('parsedStoriesContainer');
+            if (!window.parsedStories || window.parsedStories.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-16 px-4 border-2 border-dashed border-slate-200 rounded-xl bg-slate-50/50">
+                        <div class="w-12 h-12 rounded-full bg-indigo-50 text-indigo-500 flex items-center justify-center mx-auto mb-3 text-xl">
+                            <i class="fa-solid fa-microchip"></i>
+                        </div>
+                        <h3 class="font-semibold text-slate-700 text-sm">No Digest Parsed Yet</h3>
+                        <p class="text-xs text-slate-500 max-w-xs mx-auto mt-1">Click <strong>"Parse Digest for Teachers"</strong> to break down the news into classroom subjects, key concepts, and age ratings!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = window.parsedStories.map((story, idx) => `
+                <div onclick="selectStoryCard(${idx})" class="p-4 rounded-xl border transition cursor-pointer ${window.selectedStory === idx ? 'border-indigo-600 bg-indigo-50/40 ring-2 ring-indigo-500/20 shadow-sm' : 'border-slate-200 hover:border-indigo-300 bg-white'}">
+                    <div class="flex items-start justify-between gap-2 mb-2">
+                        <h3 class="font-bold text-slate-800 text-sm leading-snug">${story.title}</h3>
+                        <span class="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-indigo-100 text-indigo-700 whitespace-nowrap">${story.subject || 'STEM'}</span>
+                    </div>
+                    <p class="text-xs text-slate-600 line-clamp-2 mb-2.5">${story.summary}</p>
+
+                    <div class="bg-slate-50 border border-slate-100 rounded-lg p-2.5 text-xs text-slate-700 space-y-1">
+                        <div class="font-semibold text-indigo-900 flex items-center gap-1">
+                            <i class="fa-solid fa-chalkboard-user text-indigo-500"></i> Teacher Takeaway:
+                        </div>
+                        <p class="text-[11px] text-slate-600">${story.pedagogicalAngle}</p>
+                    </div>
+
+                    <div class="mt-2.5 flex flex-wrap gap-1">
+                        ${(story.keyConcepts || []).map(concept => `
+                            <span class="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-medium">#${concept}</span>
+                        `).join('')}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function selectStoryCard(idx) {
+            window.selectedStory = idx;
+            renderParsedStories();
+        }
+
+        function sendSelectedToStudio() {
+            if (window.selectedStory !== null && window.parsedStories[window.selectedStory]) {
+                const item = window.parsedStories[window.selectedStory];
+                document.getElementById('studioTopicInput').value = `${item.title} (${item.summary})`;
+                document.getElementById('explainerTopic').value = item.title;
+            }
+            switchTab('studioTab');
+        }
+
+        async function generateLessonPlanWithGemini() {
+            const topic = document.getElementById('studioTopicInput').value.trim();
+            if (!topic) {
+                showToast("Please enter or select a lesson topic first.", "warning");
+                return;
+            }
+
+            const grade = document.getElementById('studioGradeSelect').value;
+            const subject = document.getElementById('studioSubjectSelect').value;
+            const duration = document.getElementById('studioDurationSelect').value;
+            const pedagogy = document.getElementById('studioPedagogySelect').value;
+            const customNotes = document.getElementById('studioCustomNotes').value.trim();
+
+            const incWarmup = document.getElementById('incWarmup').checked;
+            const incActivity = document.getElementById('incActivity').checked;
+            const incQuiz = document.getElementById('incQuiz').checked;
+            const incDiff = document.getElementById('incDiff').checked;
+
+            const outputEl = document.getElementById('lessonPlanOutput');
+            const genBtn = document.getElementById('generateLessonBtn');
+
+            genBtn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i><span>Gemini Drafting Lesson Plan...</span>`;
+            genBtn.disabled = true;
+
+            outputEl.innerHTML = `
+                <div class="text-center py-20">
+                    <i class="fa-solid fa-wand-magic-sparkles text-4xl text-indigo-600 animate-pulse mb-3"></i>
+                    <h3 class="font-bold text-slate-800 text-base">Designing Instructional Plan...</h3>
+                    <p class="text-xs text-slate-500 mt-1">Adapting technical concepts into pedagogical structures for ${grade}</p>
+                </div>
+            `;
+
+            const userPrompt = `Create a complete, detailed lesson plan for a teacher based on this topic and settings:
+
+- Topic: ${topic}
+- Target Grade: ${grade}
+- Target Subject: ${subject}
+- Lesson Duration: ${duration}
+- Pedagogical Model: ${pedagogy}
+${customNotes ? `- Special Teacher Request: ${customNotes}` : ''}
+
+Required Sections in Output:
+1. **Title & Lesson Overview**: Catchy lesson title, summary, and real-world connection.
+2. **Learning Objectives**: 3 clear, measurable Bloom's Taxonomy objectives.
+3. **Essential Questions**: 2 thought-provoking questions for classroom debate.
+4. **Prerequisite Vocabulary**: Key terms with student-friendly definitions.
+${incWarmup ? '5. **Hook & Warm-Up (5-10 mins)**: Engaging real-world scenario or starter question.' : ''}
+${incActivity ? '6. **Core Activity & Student Challenge**: Detailed step-by-step group or individual activity.' : ''}
+7. **Discussion & Socratic Prompts**: Discussion questions to evaluate societal/technological impact.
+${incQuiz ? '8. **Formative Assessment & Exit Ticket**: 3 multiple-choice/short answer questions with answer key.' : ''}
+${incDiff ? '9. **Differentiation Strategies**: Accommodations for ELL/Support & Gifted Extension.' : ''}`;
+
+            const payload = {
+                contents: [{ parts: [{ text: userPrompt }] }],
+                systemInstruction: { parts: [{ text: "You are a master STEM Curriculum Specialist and Instructional Designer. Generate a comprehensive, classroom-ready lesson plan based on real-world technology updates." }] }
+            };
+
+            try {
+                const result = await fetchGeminiAPI('models/gemini-3-flash-preview:generateContent', payload);
+                const markdownText = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+                if (!markdownText) throw new Error("No lesson plan generated.");
+
+                outputEl.innerHTML = marked.parse(markdownText);
+                outputEl.dataset.rawMarkdown = markdownText;
+                outputEl.dataset.topicTitle = topic;
+                showToast("Lesson plan generated!");
+            } catch (err) {
+                outputEl.innerHTML = `<div class="p-4 bg-red-50 text-red-700 rounded-xl text-sm">Failed to generate lesson plan: ${err.message}</div>`;
+                showToast("Generation failed: " + err.message, "error");
+            } finally {
+                genBtn.innerHTML = `<i class="fa-solid fa-wand-magic-sparkles"></i><span>Generate Complete Lesson Plan</span>`;
+                genBtn.disabled = false;
+            }
+        }
+
+        async function copyLessonToClipboard() {
+            const outputEl = document.getElementById('lessonPlanOutput');
+            const raw = outputEl.dataset.rawMarkdown || outputEl.innerText;
+            if (!raw) return;
+
+            try {
+                if (navigator.clipboard && window.isSecureContext) {
+                    await navigator.clipboard.writeText(raw);
+                } else {
+                    const textarea = document.createElement('textarea');
+                    textarea.value = raw;
+                    document.body.appendChild(textarea);
+                    textarea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textarea);
+                }
+                showToast("Lesson Plan copied to clipboard!");
+            } catch (err) {
+                showToast("Failed to copy to clipboard", "error");
+            }
+        }
+
+        async function generateStudentExplanation() {
+            const topic = document.getElementById('explainerTopic').value.trim();
+            if (!topic) {
+                showToast("Please enter a topic to explain.", "warning");
+                return;
+            }
+
+            const grade = document.getElementById('explainerGrade').value;
+            const btn = document.getElementById('genExplainerBtn');
+
+            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i>Generating Student Explanation...`;
+            btn.disabled = true;
+
+            const userPrompt = `Explain the following technology topic for a student at this target level: ${grade}.
+Topic: ${topic}
+
+Requirements:
+1. Use an intuitive real-world analogy (e.g. comparing quantum qubits to a spinning coin).
+2. Keep it engaging, clear, and around 150-200 words.
+3. Finish with 1 fascinating takeaway question for the student.`;
+
+            const payload = {
+                contents: [{ parts: [{ text: userPrompt }] }],
+                systemInstruction: { parts: [{ text: "You are a fun, friendly, highly creative teacher explaining cutting-edge technology concepts to students using simple everyday analogies." }] }
+            };
+
+            try {
+                const result = await fetchGeminiAPI('models/gemini-3-flash-preview:generateContent', payload);
+                const text = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+                if (!text) throw new Error("No explanation generated.");
+
+                document.getElementById('explainerText').innerText = text;
+                document.getElementById('explainerResultBox').classList.remove('hidden');
+                showToast("Student explanation ready!");
+            } catch (err) {
+                showToast("Error: " + err.message, "error");
+            } finally {
+                btn.innerHTML = `<i class="fa-solid fa-lightbulb"></i><span>Create Student-Friendly Explanation</span>`;
+                btn.disabled = false;
+            }
+        }
+
+        async function copyExplainerText() {
+            const text = document.getElementById('explainerText').innerText;
+            if (!text) return;
+            try {
+                if (navigator.clipboard && window.isSecureContext) {
+                    await navigator.clipboard.writeText(text);
+                } else {
+                    const textarea = document.createElement('textarea');
+                    textarea.value = text;
+                    document.body.appendChild(textarea);
+                    textarea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textarea);
+                }
+                showToast("Student explanation copied!");
+            } catch (err) {
+                showToast("Failed to copy text", "error");
+            }
+        }
+
+        async function generateAudioTTS() {
+            const textToSay = document.getElementById('explainerText').innerText.trim();
+            if (!textToSay) {
+                showToast("Please generate a student explanation first!", "warning");
+                return;
+            }
+
+            const voiceName = document.getElementById('ttsVoiceSelect').value;
+            const ttsBtn = document.getElementById('ttsBtn');
+            const audioContainer = document.getElementById('ttsAudioContainer');
+
+            ttsBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-1"></i>Synthesizing Audio...`;
+            ttsBtn.disabled = true;
+
+            const payload = {
+                contents: [{ parts: [{ text: `Say warmly and clearly for students: ${textToSay}` }] }],
+                generationConfig: {
+                    responseModalities: ["AUDIO"],
+                    speechConfig: {
+                        voiceConfig: {
+                            prebuiltVoiceConfig: { voiceName: voiceName }
+                        }
+                    }
+                }
+            };
+
+            try {
+                const result = await fetchGeminiAPI('models/gemini-2.5-flash-preview-tts:generateContent', payload);
+                const part = result?.candidates?.[0]?.content?.parts?.[0];
+                const audioBase64 = part?.inlineData?.data;
+                const mimeType = part?.inlineData?.mimeType || '';
+
+                if (!audioBase64) throw new Error("No audio returned from Gemini Speech TTS.");
+
+                const sampleRateMatch = mimeType.match(/rate=(\d+)/);
+                const sampleRate = sampleRateMatch ? parseInt(sampleRateMatch[1], 10) : 24000;
+
+                const pcmData = base64ToArrayBuffer(audioBase64);
+                const pcm16 = new Int16Array(pcmData);
+                const wavBlob = pcm16ToWavBlob(pcm16, sampleRate);
+                const audioUrl = URL.createObjectURL(wavBlob);
+
+                audioContainer.innerHTML = `
+                    <audio controls autoplay class="w-full h-10 rounded-lg">
+                        <source src="${audioUrl}" type="audio/wav">
+                        Your browser does not support audio playback.
+                    </audio>
+                `;
+                showToast("Spoken audio synthesized!");
+            } catch (err) {
+                showToast("TTS Audio Error: " + err.message, "error");
+            } finally {
+                ttsBtn.innerHTML = `<i class="fa-solid fa-play"></i><span>Generate Spoken Audio</span>`;
+                ttsBtn.disabled = false;
+            }
+        }
+
+        function base64ToArrayBuffer(base64) {
+            const binaryString = window.atob(base64);
+            const len = binaryString.length;
+            const bytes = new Uint8Array(len);
+            for (let i = 0; i < len; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+            }
+            return bytes.buffer;
+        }
+
+        function pcm16ToWavBlob(pcm16Data, sampleRate) {
+            const numChannels = 1;
+            const byteRate = sampleRate * numChannels * 2;
+            const blockAlign = numChannels * 2;
+            const buffer = new ArrayBuffer(44 + pcm16Data.length * 2);
+            const view = new DataView(buffer);
+
+            function writeString(offset, string) {
+                for (let i = 0; i < string.length; i++) {
+                    view.setUint8(offset + i, string.charCodeAt(i));
+                }
+            }
+
+            writeString(0, 'RIFF');
+            view.setUint32(4, 36 + pcm16Data.length * 2, true);
+            writeString(8, 'WAVE');
+            writeString(12, 'fmt ');
+            view.setUint32(16, 16, true);
+            view.setUint16(20, 1, true);
+            view.setUint16(22, numChannels, true);
+            view.setUint32(24, sampleRate, true);
+            view.setUint32(28, byteRate, true);
+            view.setUint16(32, blockAlign, true);
+            view.setUint16(34, 16, true);
+            writeString(36, 'data');
+            view.setUint32(40, pcm16Data.length * 2, true);
+
+            for (let i = 0; i < pcm16Data.length; i++) {
+                view.setInt16(44 + i * 2, pcm16Data[i], true);
+            }
+
+            return new Blob([buffer], { type: 'audio/wav' });
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            loadSampleDigest();
+            updateSavedCountBadge();
+            renderSavedLibrary();
+            updateApiKeyStatusUI();
+        });
+    </script>
+
+    <!-- FIREBASE MODULE & CLOUD STORAGE INITIALIZATION -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, collection, setDoc, deleteDoc, onSnapshot, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'edubridge-ai';
+        let db = null;
+        let auth = null;
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCm7cL9Ig8PDvammUkGtGXkmI0TO5tSCCQ",
+            authDomain: "techbridgeai-5ee6a.firebaseapp.com",
+            projectId: "techbridgeai-5ee6a",
+            storageBucket: "techbridgeai-5ee6a.firebasestorage.app",
+            messagingSenderId: "540003000645",
+            appId: "1:540003000645:web:68faea1120877032701e2c",
+            measurementId: "G-PT1MBP1KFH"
+        };
+
+        function getPersistentUserId() {
+            let pid = safeGetLocalStorage('edubridge_persistent_user_id', null);
+            if (!pid) {
+                pid = 'usr_' + Math.random().toString(36).substring(2, 11) + Date.now().toString(36);
+                safeSetLocalStorage('edubridge_persistent_user_id', pid);
+            }
+            return pid;
+        }
+
+        try {
+            const app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
+
+            const initAuth = async () => {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            };
+
+            initAuth().catch(err => console.error("Auth error:", err));
+
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    setupFirestoreListener();
+                }
+            });
+        } catch (e) {
+            console.error("Firebase initialization failed:", e);
+        }
+
+        function setupFirestoreListener() {
+            if (!db || !auth.currentUser) return;
+            
+            const persistentUid = getPersistentUserId();
+            const lessonsCol = collection(db, 'artifacts', appId, 'users', persistentUid, 'lessons');
+            
+            onSnapshot(lessonsCol, (snapshot) => {
+                const cloudLessons = [];
+                snapshot.forEach((docSnap) => {
+                    cloudLessons.push({
+                        id: docSnap.id,
+                        ...docSnap.data()
+                    });
+                });
+
+                if (cloudLessons.length > 0) {
+                    cloudLessons.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+                    window.savedLessons = cloudLessons;
+                    safeSetLocalStorage('edubridge_saved_lessons', JSON.stringify(window.savedLessons));
+                } else {
+                    const localItems = JSON.parse(safeGetLocalStorage('edubridge_saved_lessons', '[]'));
+                    if (localItems.length > 0) {
+                        window.savedLessons = localItems;
+                        localItems.forEach(async (item) => {
+                            try {
+                                const itemDoc = doc(db, 'artifacts', appId, 'users', persistentUid, 'lessons', item.id);
+                                await setDoc(itemDoc, item);
+                            } catch (e) { 
+                                console.error("Cloud sync recovery error", e); 
+                            }
+                        });
+                    }
+                }
+
+                if (typeof updateSavedCountBadge === 'function') updateSavedCountBadge();
+                if (typeof renderSavedLibrary === 'function') renderSavedLibrary();
+            }, (error) => {
+                console.error("Firestore snapshot error:", error);
+                window.savedLessons = JSON.parse(safeGetLocalStorage('edubridge_saved_lessons', '[]'));
+                if (typeof updateSavedCountBadge === 'function') updateSavedCountBadge();
+                if (typeof renderSavedLibrary === 'function') renderSavedLibrary();
+            });
+        }
+
+        // Global Save Function
+        window.saveLessonToLibrary = async function() {
+            const outputEl = document.getElementById('lessonPlanOutput');
+            const raw = outputEl ? outputEl.dataset.rawMarkdown : null;
+            const topic = (outputEl && outputEl.dataset.topicTitle) || document.getElementById('studioTopicInput').value;
+
+            if (!raw) {
+                showToast("Please generate a lesson plan first.", "warning");
+                return;
+            }
+
+            const newEntry = {
+                id: Date.now().toString(),
+                title: topic,
+                date: new Date().toLocaleDateString(),
+                grade: document.getElementById('studioGradeSelect').value,
+                subject: document.getElementById('studioSubjectSelect').value,
+                content: raw,
+                timestamp: Date.now()
+            };
+
+            window.savedLessons = window.savedLessons.filter(item => item.id !== newEntry.id);
+            window.savedLessons.unshift(newEntry);
+            safeSetLocalStorage('edubridge_saved_lessons', JSON.stringify(window.savedLessons));
+            
+            if (typeof updateSavedCountBadge === 'function') updateSavedCountBadge();
+            if (typeof renderSavedLibrary === 'function') renderSavedLibrary();
+
+            if (db && auth.currentUser) {
+                try {
+                    const persistentUid = getPersistentUserId();
+                    const lessonDocRef = doc(db, 'artifacts', appId, 'users', persistentUid, 'lessons', newEntry.id);
+                    await setDoc(lessonDocRef, newEntry);
+                    showToast("Saved to Library & Cloud!");
+                } catch (err) {
+                    console.error("Save error:", err);
+                    showToast("Saved to local library!", "warning");
+                }
+            } else {
+                showToast("Saved to local library!");
+            }
+        };
+
+        // Global Delete Function
+        window.deleteSavedLesson = function(id) {
+            showConfirmModal("Are you sure you want to remove this lesson plan from your library?", async () => {
+                window.savedLessons = window.savedLessons.filter(item => item.id !== id);
+                safeSetLocalStorage('edubridge_saved_lessons', JSON.stringify(window.savedLessons));
+                
+                if (typeof updateSavedCountBadge === 'function') updateSavedCountBadge();
+                if (typeof renderSavedLibrary === 'function') renderSavedLibrary();
+
+                if (db && auth.currentUser) {
+                    try {
+                        const persistentUid = getPersistentUserId();
+                        const lessonRef = doc(db, 'artifacts', appId, 'users', persistentUid, 'lessons', id);
+                        await deleteDoc(lessonRef);
+                    } catch (err) {
+                        console.error("Cloud delete error:", err);
+                    }
+                }
+                showToast("Lesson removed.");
+            });
+        };
+
+        // Global Clear All Function
+        window.clearAllSavedLessons = function() {
+            showConfirmModal("Are you sure you want to clear all items in your library?", async () => {
+                window.savedLessons = [];
+                safeSetLocalStorage('edubridge_saved_lessons', JSON.stringify([]));
+                
+                if (typeof updateSavedCountBadge === 'function') updateSavedCountBadge();
+                if (typeof renderSavedLibrary === 'function') renderSavedLibrary();
+
+                if (db && auth.currentUser) {
+                    try {
+                        const persistentUid = getPersistentUserId();
+                        const lessonsCol = collection(db, 'artifacts', appId, 'users', persistentUid, 'lessons');
+                        const snapshot = await getDocs(lessonsCol);
+                        const deletePromises = [];
+                        snapshot.forEach((docSnap) => {
+                            deletePromises.push(deleteDoc(doc(db, 'artifacts', appId, 'users', persistentUid, 'lessons', docSnap.id)));
+                        });
+                        await Promise.all(deletePromises);
+                    } catch (err) {
+                        console.error("Clear error:", err);
+                    }
+                }
+                showToast("Library cleared.");
+            });
+        };
+    </script>
+</body>
+</html>
