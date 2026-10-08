@@ -56,6 +56,29 @@
 </head>
 <body class="h-full flex flex-col text-slate-800 antialiased selection:bg-indigo-500 selection:text-white">
 
+    <!-- Toast Notification Overlay -->
+    <div id="toastNotification" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none flex items-center gap-3 px-4 py-3 rounded-xl shadow-xl border text-sm font-semibold text-white bg-slate-900 border-slate-700">
+        <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400 text-lg"></i>
+        <span id="toastMessage">Action completed successfully</span>
+    </div>
+
+    <!-- Custom Confirmation Modal -->
+    <div id="confirmModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-slate-100 space-y-4">
+            <div class="flex items-center gap-3 text-amber-500">
+                <div class="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center text-lg font-bold">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+                <h3 class="font-bold text-slate-800 text-base">Please Confirm</h3>
+            </div>
+            <p id="confirmModalMessage" class="text-xs text-slate-600 leading-relaxed">Are you sure you want to proceed?</p>
+            <div class="flex justify-end space-x-2 pt-2">
+                <button onclick="closeConfirmModal(false)" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition">Cancel</button>
+                <button id="confirmModalActionBtn" class="px-4 py-2 text-xs font-bold bg-red-600 hover:bg-red-700 text-white rounded-lg transition shadow-sm">Confirm</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Header Navbar -->
     <header class="bg-indigo-900 text-white shadow-md sticky top-0 z-40">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -77,7 +100,7 @@
                         <i class="fa-solid fa-key text-amber-400"></i>
                         <span id="apiKeyStatusLabel">API Settings</span>
                     </button>
-                    <a href="#digestSection" class="hidden md:flex items-center space-x-1 text-xs bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-3 py-1.5 rounded-lg transition shadow-sm">
+                    <a href="#digestSection" onclick="switchTab('digestTab')" class="hidden md:flex items-center space-x-1 text-xs bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-3 py-1.5 rounded-lg transition shadow-sm">
                         <i class="fa-solid fa-plus"></i>
                         <span>New Lesson</span>
                     </a>
@@ -112,7 +135,7 @@
 
         <!-- TAB 1: TECH DIGEST INPUT & PARSER -->
         <div id="digestTab" class="tab-content space-y-6">
-            <!-- Hero / Guide Banner -->
+            <!-- Hero Banner -->
             <div class="bg-gradient-to-r from-indigo-900 via-indigo-800 to-purple-900 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
                 <div class="relative z-10 max-w-3xl space-y-2">
                     <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-indigo-500/30 text-indigo-200 border border-indigo-400/30">
@@ -138,12 +161,12 @@
                                 <i class="fa-solid fa-rotate-left text-slate-500 mr-1"></i>Reset Sample
                             </button>
                             <button onclick="fetchLiveDigestWithSearch(event)" class="text-xs bg-purple-50 hover:bg-purple-100 text-purple-700 px-2.5 py-1 rounded-md font-medium border border-purple-200 transition">
-                                <i class="fa-solid fa-magnifying-glass text-purple-600 mr-1"></i>Fetch Fresh News (Search)
+                                <i class="fa-solid fa-magnifying-glass text-purple-600 mr-1"></i>Fetch Fresh News
                             </button>
                         </div>
                     </div>
 
-                    <!-- Target Resource URLs (Websites & Videos) Input Window -->
+                    <!-- Target Resource URLs Input Window -->
                     <div class="bg-indigo-50/60 border border-indigo-100 p-3 rounded-xl space-y-1.5">
                         <div class="flex items-center justify-between">
                             <label class="font-bold text-xs text-indigo-950 flex items-center gap-1.5">
@@ -181,9 +204,7 @@
                         <span id="parsedCountBadge" class="bg-indigo-100 text-indigo-700 text-xs px-2.5 py-1 rounded-full font-bold">0 Selected</span>
                     </div>
 
-                    <!-- List Container -->
                     <div id="parsedStoriesContainer" class="flex-1 overflow-y-auto max-h-[460px] space-y-3 custom-scrollbar pr-1">
-                        <!-- Initial placeholder state -->
                         <div class="text-center py-16 px-4 border-2 border-dashed border-slate-200 rounded-xl bg-slate-50/50">
                             <div class="w-12 h-12 rounded-full bg-indigo-50 text-indigo-500 flex items-center justify-center mx-auto mb-3 text-xl">
                                 <i class="fa-solid fa-microchip"></i>
@@ -208,7 +229,7 @@
         <div id="studioTab" class="tab-content hidden space-y-6">
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
                 
-                <!-- Lesson Builder Controls (Left Column) -->
+                <!-- Lesson Builder Controls -->
                 <div class="lg:col-span-5 bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-5">
                     <div class="border-b border-slate-100 pb-3">
                         <h2 class="font-bold text-slate-800 text-lg flex items-center gap-2">
@@ -218,14 +239,12 @@
                         <p class="text-xs text-slate-500">Configure parameters for Gemini to draft your full lesson plan</p>
                     </div>
 
-                    <!-- Selected Target Topic -->
                     <div class="space-y-1.5">
                         <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Topic / Core Source Story</label>
                         <input id="studioTopicInput" type="text" class="w-full text-sm p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:bg-white transition" placeholder="e.g. MEGATRON Supercomputer & Early Stars Simulation">
                     </div>
 
                     <div class="grid grid-cols-2 gap-3">
-                        <!-- Grade Level -->
                         <div class="space-y-1.5">
                             <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Grade Level</label>
                             <select id="studioGradeSelect" class="w-full text-sm p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
@@ -236,7 +255,6 @@
                             </select>
                         </div>
 
-                        <!-- Target Subject -->
                         <div class="space-y-1.5">
                             <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Subject Area</label>
                             <select id="studioSubjectSelect" class="w-full text-sm p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
@@ -249,7 +267,6 @@
                     </div>
 
                     <div class="grid grid-cols-2 gap-3">
-                        <!-- Lesson Duration -->
                         <div class="space-y-1.5">
                             <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Duration</label>
                             <select id="studioDurationSelect" class="w-full text-sm p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
@@ -259,7 +276,6 @@
                             </select>
                         </div>
 
-                        <!-- Teaching Model / Pedagogy -->
                         <div class="space-y-1.5">
                             <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Teaching Model</label>
                             <select id="studioPedagogySelect" class="w-full text-sm p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
@@ -271,7 +287,6 @@
                         </div>
                     </div>
 
-                    <!-- Special Components Checklist -->
                     <div class="space-y-2">
                         <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Include Sections</label>
                         <div class="grid grid-cols-2 gap-2 text-xs">
@@ -294,20 +309,18 @@
                         </div>
                     </div>
 
-                    <!-- Custom Teacher Notes/Instructions -->
                     <div class="space-y-1.5">
                         <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Custom Teacher Directives (Optional)</label>
                         <textarea id="studioCustomNotes" rows="2" class="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:bg-white transition" placeholder="e.g. Include a roleplay activity on ethical AI, emphasis on vocabulary definitions..."></textarea>
                     </div>
 
-                    <!-- Generate Button -->
                     <button onclick="generateLessonPlanWithGemini()" id="generateLessonBtn" class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-extrabold py-3.5 px-6 rounded-xl shadow-lg transition flex items-center justify-center space-x-2 text-sm">
                         <i class="fa-solid fa-wand-magic-sparkles"></i>
                         <span>Generate Complete Lesson Plan</span>
                     </button>
                 </div>
 
-                <!-- Generated Lesson Display (Right Column) -->
+                <!-- Generated Lesson Display -->
                 <div class="lg:col-span-7 bg-white rounded-2xl border border-slate-200 shadow-sm p-6 flex flex-col space-y-4 min-h-[600px]">
                     <div class="flex items-center justify-between border-b border-slate-100 pb-3">
                         <div class="flex items-center space-x-2">
@@ -318,7 +331,7 @@
                             <button onclick="copyLessonToClipboard()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg font-semibold transition flex items-center gap-1">
                                 <i class="fa-regular fa-copy"></i> Copy Text
                             </button>
-                            <button onclick="saveLessonToLibrary()" class="text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 px-3 py-1.5 rounded-lg font-semibold transition flex items-center gap-1">
+                            <button onclick="window.saveLessonToLibrary()" class="text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 px-3 py-1.5 rounded-lg font-semibold transition flex items-center gap-1">
                                 <i class="fa-solid fa-bookmark"></i> Save to Library
                             </button>
                             <button onclick="window.print()" class="text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 px-3 py-1.5 rounded-lg font-semibold transition flex items-center gap-1">
@@ -327,9 +340,7 @@
                         </div>
                     </div>
 
-                    <!-- Content Output Area -->
                     <div id="lessonPlanOutput" class="flex-1 prose prose-indigo max-w-none text-slate-700 text-sm overflow-y-auto max-h-[620px] custom-scrollbar p-2">
-                        <!-- Initial Placeholder -->
                         <div class="text-center py-28 px-6 border-2 border-dashed border-slate-200 rounded-2xl bg-slate-50/50">
                             <div class="w-16 h-16 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto mb-4 text-2xl shadow-inner">
                                 <i class="fa-solid fa-book-open-reader"></i>
@@ -428,7 +439,7 @@
                         </h2>
                         <p class="text-xs text-slate-500">Access and export your previously generated lesson plans stored locally</p>
                     </div>
-                    <button onclick="clearAllSavedLessons()" class="text-xs text-red-600 hover:underline font-semibold">
+                    <button onclick="window.clearAllSavedLessons()" class="text-xs text-red-600 hover:underline font-semibold">
                         Clear All Library
                     </button>
                 </div>
@@ -455,7 +466,7 @@
             </div>
 
             <p class="text-xs text-slate-600 leading-relaxed">
-                This app uses <strong>gemini-3-flash-preview</strong> for text generation and <strong>gemini-2.5-flash-preview-tts</strong> for audio. You can enter an optional custom API key below if needed, or leave blank to use default runtime access.
+                This app uses <strong>gemini-3-flash-preview</strong> for text generation and <strong>gemini-2.5-flash-preview-tts</strong> for audio synthesis. You can enter a custom Gemini key below.
             </p>
 
             <div class="space-y-1.5">
@@ -465,15 +476,83 @@
 
             <div class="flex justify-end space-x-2 pt-2">
                 <button onclick="saveApiKeySetting()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition">
-                    Save Key Settings
+                    Save Settings
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- JAVASCRIPT APP LOGIC -->
+    <!-- MAIN APPLICATION LOGIC SCRIPT -->
     <script>
-        /* Sample Initial Digest from User Prompt */
+        /* Shared Global Scope Initialization */
+        function safeGetLocalStorage(key, fallback = null) {
+            try {
+                return localStorage.getItem(key) || fallback;
+            } catch (e) {
+                console.warn('LocalStorage access restricted:', e);
+                return fallback;
+            }
+        }
+
+        function safeSetLocalStorage(key, value) {
+            try {
+                localStorage.setItem(key, value);
+            } catch (e) {
+                console.warn('LocalStorage write restricted:', e);
+            }
+        }
+
+        window.savedLessons = JSON.parse(safeGetLocalStorage('edubridge_saved_lessons', '[]'));
+        window.parsedStories = [];
+        window.selectedStory = null;
+        window.activeTab = 'digestTab';
+        window.confirmModalCallback = null;
+        window.customApiKeyOverride = safeGetLocalStorage('edubridge_custom_api_key', '');
+
+        /* Toast Notifications Handler */
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toastNotification');
+            const msgEl = document.getElementById('toastMessage');
+            const iconEl = document.getElementById('toastIcon');
+
+            if (!toast || !msgEl || !iconEl) return;
+
+            msgEl.innerText = message;
+            if (type === 'error') {
+                iconEl.className = 'fa-solid fa-circle-xmark text-red-400 text-lg';
+            } else if (type === 'warning') {
+                iconEl.className = 'fa-solid fa-triangle-exclamation text-amber-400 text-lg';
+            } else {
+                iconEl.className = 'fa-solid fa-circle-check text-emerald-400 text-lg';
+            }
+
+            toast.classList.remove('translate-y-20', 'opacity-0', 'pointer-events-none');
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0', 'pointer-events-none');
+            }, 3000);
+        }
+
+        /* Confirmation Modal Handler */
+        function showConfirmModal(message, onConfirm) {
+            document.getElementById('confirmModalMessage').innerText = message;
+            window.confirmModalCallback = onConfirm;
+            document.getElementById('confirmModal').classList.remove('hidden');
+        }
+
+        function closeConfirmModal(accepted) {
+            document.getElementById('confirmModal').classList.add('hidden');
+            if (accepted && typeof window.confirmModalCallback === 'function') {
+                window.confirmModalCallback();
+            }
+            window.confirmModalCallback = null;
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const btn = document.getElementById('confirmModalActionBtn');
+            if (btn) btn.addEventListener('click', () => closeConfirmModal(true));
+        });
+
+        /* Sample Initial Digest */
         const DEFAULT_SAMPLE_DIGEST = `🤖 **Daily AI & Tech Digest**
 
 Here are today's top highlights from leading science and technology publications:
@@ -496,13 +575,6 @@ As autonomous AI agents capable of executing multi-step web tasks grow in popula
 Physicists proposed a novel qubit architecture built using **superfluid helium**. By shielding delicate quantum information from ambient electromagnetic noise, the platform could cut quantum computing error rates by roughly 100 times compared to standard superconducting systems.
 *Source: ScienceDaily / Physics News*`;
 
-        // App Global State
-        let parsedStories = [];
-        let selectedStory = null;
-        let activeTab = 'digestTab';
-        let savedLessons = JSON.parse(localStorage.getItem('edubridge_saved_lessons') || '[]');
-
-        /* Load Sample Text */
         function loadSampleDigest() {
             document.getElementById('digestInput').value = DEFAULT_SAMPLE_DIGEST;
         }
@@ -510,51 +582,6 @@ Physicists proposed a novel qubit architecture built using **superfluid helium**
         function clearDigestInput() {
             document.getElementById('digestInput').value = '';
             document.getElementById('targetUrlsInput').value = '';
-        }
-
-        /* --- FETCH FRESH DIGEST WITH GEMINI SEARCH --- */
-        async function fetchLiveDigestWithSearch(e) {
-            const btn = e ? e.currentTarget : document.querySelector('button[onclick*="fetchLiveDigestWithSearch"]');
-            const originalHtml = btn ? btn.innerHTML : '';
-            const targetUrls = document.getElementById('targetUrlsInput').value.trim();
-
-            if (btn) {
-                btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-1"></i>Fetching...`;
-                btn.disabled = true;
-            }
-
-            try {
-                let userQuery = "";
-                if (targetUrls) {
-                    userQuery = `Summarize and synthesize key STEM / technology breakthroughs from these target resource URLs and videos:\n${targetUrls}\n\nProduce exactly 4 distinct bulleted summaries highlighting the key findings, background, and significance suitable for teachers.`;
-                } else {
-                    userQuery = "Provide a clean bulleted summary of 4 recent breakthrough news items in Artificial Intelligence, Quantum Computing, Space Science, and Cybersecurity from the past few days. Include brief details and source publication.";
-                }
-
-                const systemPrompt = "Act as an educational science & tech news aggregator and analyst. Synthesize source materials into 4 clear, high-yield news summaries for educators.";
-
-                const payload = {
-                    contents: [{ parts: [{ text: userQuery }] }],
-                    tools: [{ "google_search": {} }],
-                    systemInstruction: { parts: [{ text: systemPrompt }] }
-                };
-
-                const result = await fetchGeminiAPI('models/gemini-3-flash-preview:generateContent', payload);
-                const text = result?.candidates?.[0]?.content?.parts?.[0]?.text;
-
-                if (text) {
-                    document.getElementById('digestInput').value = text;
-                } else {
-                    alert("Unable to fetch fresh news. Please check your internet connection or target links.");
-                }
-            } catch (err) {
-                alert("Error fetching news: " + err.message);
-            } finally {
-                if (btn) {
-                    btn.innerHTML = originalHtml;
-                    btn.disabled = false;
-                }
-            }
         }
 
         /* --- API HELPER WITH EXPONENTIAL BACKOFF --- */
@@ -587,9 +614,65 @@ Physicists proposed a novel qubit architecture built using **superfluid helium**
             }
         }
 
-        /* --- TAB SWITCHING LOGIC --- */
+        function updateSavedCountBadge() {
+            const badge = document.getElementById('savedCountBadge');
+            if (badge) badge.innerText = window.savedLessons.length;
+        }
+
+        function renderSavedLibrary() {
+            const grid = document.getElementById('libraryItemsGrid');
+            if (!grid) return;
+
+            if (window.savedLessons.length === 0) {
+                grid.innerHTML = `
+                    <div class="col-span-full text-center py-16 text-slate-400">
+                        <i class="fa-solid fa-folder-open text-4xl mb-2 text-slate-300"></i>
+                        <p class="text-sm font-medium">No saved lessons in your library yet.</p>
+                        <p class="text-xs text-slate-400 mt-1">Generated lesson plans will appear here once saved.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            grid.innerHTML = window.savedLessons.map((item, idx) => `
+                <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col justify-between space-y-3 hover:shadow-md transition">
+                    <div>
+                        <div class="flex items-center justify-between text-[11px] text-slate-400 mb-1">
+                            <span>${item.date || 'Recent'}</span>
+                            <span class="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded font-bold">${item.subject || 'STEM'}</span>
+                        </div>
+                        <h3 class="font-bold text-slate-800 text-sm line-clamp-2">${item.title}</h3>
+                        <p class="text-xs text-slate-500 mt-1">${item.grade || ''}</p>
+                    </div>
+                    <div class="flex items-center space-x-2 pt-2 border-t border-slate-200">
+                        <button onclick="viewSavedLesson(${idx})" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs py-1.5 px-3 rounded-lg transition">
+                            View Plan
+                        </button>
+                        <button onclick="window.deleteSavedLesson('${item.id}')" class="text-xs text-red-500 hover:text-red-700 p-1.5">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function viewSavedLesson(idx) {
+            const item = window.savedLessons[idx];
+            if (!item) return;
+
+            const outputEl = document.getElementById('lessonPlanOutput');
+            outputEl.innerHTML = marked.parse(item.content);
+            outputEl.dataset.rawMarkdown = item.content;
+            outputEl.dataset.topicTitle = item.title;
+
+            document.getElementById('studioTopicInput').value = item.title;
+            switchTab('studioTab');
+            showToast("Loaded saved lesson into editor.");
+        }
+
+        /* --- TAB SWITCHING --- */
         function switchTab(tabId) {
-            activeTab = tabId;
+            window.activeTab = tabId;
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
             document.querySelectorAll('.tab-btn').forEach(btn => {
                 btn.classList.remove('bg-indigo-600', 'text-white', 'shadow-sm');
@@ -606,30 +689,107 @@ Physicists proposed a novel qubit architecture built using **superfluid helium**
             }
         }
 
-        /* --- API SETTINGS MODAL --- */
         function toggleApiKeyModal() {
             const modal = document.getElementById('apiKeyModal');
             modal.classList.toggle('hidden');
+            if (!modal.classList.contains('hidden')) {
+                document.getElementById('customApiKeyInput').value = window.customApiKeyOverride || '';
+            }
+        }
+
+        function updateApiKeyStatusUI() {
+            const label = document.getElementById('apiKeyStatusLabel');
+            if (label) {
+                label.innerText = window.customApiKeyOverride ? "Key Configured" : "API Settings";
+            }
         }
 
         function saveApiKeySetting() {
             const key = document.getElementById('customApiKeyInput').value.trim();
-            localStorage.setItem('edubridge_custom_api_key', key);
+            window.customApiKeyOverride = key;
+            safeSetLocalStorage('edubridge_custom_api_key', key);
+
             toggleApiKeyModal();
-            alert("API Key configuration saved.");
+            updateApiKeyStatusUI();
+            showToast("API Key saved successfully!");
+            /* Removed location.reload() to prevent blank page issues in embedded Google Sites iframes */
         }
 
-        // Initialize page state
-        window.addEventListener('DOMContentLoaded', () => {
-            loadSampleDigest();
-            updateSavedCountBadge();
-            renderSavedLibrary();
-        });
+        /* --- API HELPER WITH EXPONENTIAL BACKOFF --- */
+        async function fetchGeminiAPI(endpoint, payload) {
+            const customKey = window.customApiKeyOverride || safeGetLocalStorage('edubridge_custom_api_key', '');
+            const url = `https://generativelanguage.googleapis.com/v1beta/${endpoint}?key=${customKey}`;
+
+            let retries = 3;
+            let delay = 1000;
+
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const res = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!res.ok) {
+                        const errJson = await res.json().catch(() => ({}));
+                        throw new Error(errJson.error?.message || `API HTTP error ${res.status}`);
+                    }
+
+                    return await res.json();
+                } catch (err) {
+                    if (i === retries - 1) throw err;
+                    await new Promise(r => setTimeout(r, delay));
+                    delay *= 2;
+                }
+            }
+        }
+
+        async function fetchLiveDigestWithSearch(event) {
+            const targetUrls = document.getElementById('targetUrlsInput').value.trim();
+            const btn = event ? event.currentTarget : null;
+            const originalHtml = btn ? btn.innerHTML : '';
+
+            if (btn) {
+                btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-1"></i> Fetching...`;
+                btn.disabled = true;
+            }
+
+            try {
+                let userQuery = "Provide a digest of the top 4 latest major STEM and technology news stories from today with summaries, sources, and educational insights.";
+                if (targetUrls) {
+                    userQuery = `Summarize and synthesize the core educational and tech highlights from the following target links or topics into 4 clean digest stories:\n${targetUrls}`;
+                }
+
+                const payload = {
+                    contents: [{ parts: [{ text: userQuery }] }],
+                    tools: [{ "google_search": {} }],
+                    systemInstruction: { parts: [{ text: "Act as an educational science & tech news aggregator and analyst. Synthesize source materials into 4 clear news summaries for educators." }] }
+                };
+
+                const result = await fetchGeminiAPI('models/gemini-3-flash-preview:generateContent', payload);
+                const text = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+                if (text) {
+                    document.getElementById('digestInput').value = text;
+                    showToast("Fresh news fetched successfully!");
+                } else {
+                    showToast("Unable to fetch fresh news. Please check target links.", "warning");
+                }
+            } catch (err) {
+                showToast("Error fetching news: " + err.message, "error");
+            } finally {
+                if (btn) {
+                    btn.innerHTML = originalHtml;
+                    btn.disabled = false;
+                }
+            }
+        }
 
         async function parseDigestWithGemini() {
             const text = document.getElementById('digestInput').value.trim();
             if (!text) {
-                alert("Please paste or fetch a tech digest first.");
+                showToast("Please paste or fetch a tech digest first.", "warning");
                 return;
             }
 
@@ -668,14 +828,15 @@ Physicists proposed a novel qubit architecture built using **superfluid helium**
                 const result = await fetchGeminiAPI('models/gemini-3-flash-preview:generateContent', payload);
                 const jsonText = result?.candidates?.[0]?.content?.parts?.[0]?.text;
                 if (jsonText) {
-                    parsedStories = JSON.parse(jsonText);
-                    selectedStory = 0;
+                    window.parsedStories = JSON.parse(jsonText);
+                    window.selectedStory = 0;
                     renderParsedStories();
-                    document.getElementById('parsedCountBadge').innerText = `${parsedStories.length} Parsed`;
+                    document.getElementById('parsedCountBadge').innerText = `${window.parsedStories.length} Parsed`;
                     document.getElementById('parsedActions').classList.remove('hidden');
+                    showToast(`Successfully parsed ${window.parsedStories.length} stories!`);
                 }
             } catch (err) {
-                alert("Error parsing digest: " + err.message);
+                showToast("Error parsing digest: " + err.message, "error");
             } finally {
                 btn.innerHTML = `<i class="fa-solid fa-wand-magic-sparkles"></i><span>Parse Digest for Teachers</span>`;
                 btn.disabled = false;
@@ -684,7 +845,7 @@ Physicists proposed a novel qubit architecture built using **superfluid helium**
 
         function renderParsedStories() {
             const container = document.getElementById('parsedStoriesContainer');
-            if (!parsedStories || parsedStories.length === 0) {
+            if (!window.parsedStories || window.parsedStories.length === 0) {
                 container.innerHTML = `
                     <div class="text-center py-16 px-4 border-2 border-dashed border-slate-200 rounded-xl bg-slate-50/50">
                         <div class="w-12 h-12 rounded-full bg-indigo-50 text-indigo-500 flex items-center justify-center mx-auto mb-3 text-xl">
@@ -697,8 +858,8 @@ Physicists proposed a novel qubit architecture built using **superfluid helium**
                 return;
             }
 
-            container.innerHTML = parsedStories.map((story, idx) => `
-                <div onclick="selectStoryCard(${idx})" class="p-4 rounded-xl border transition cursor-pointer ${selectedStory === idx ? 'border-indigo-600 bg-indigo-50/40 ring-2 ring-indigo-500/20 shadow-sm' : 'border-slate-200 hover:border-indigo-300 bg-white'}">
+            container.innerHTML = window.parsedStories.map((story, idx) => `
+                <div onclick="selectStoryCard(${idx})" class="p-4 rounded-xl border transition cursor-pointer ${window.selectedStory === idx ? 'border-indigo-600 bg-indigo-50/40 ring-2 ring-indigo-500/20 shadow-sm' : 'border-slate-200 hover:border-indigo-300 bg-white'}">
                     <div class="flex items-start justify-between gap-2 mb-2">
                         <h3 class="font-bold text-slate-800 text-sm leading-snug">${story.title}</h3>
                         <span class="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-indigo-100 text-indigo-700 whitespace-nowrap">${story.subject || 'STEM'}</span>
@@ -722,37 +883,23 @@ Physicists proposed a novel qubit architecture built using **superfluid helium**
         }
 
         function selectStoryCard(idx) {
-            selectedStory = idx;
+            window.selectedStory = idx;
             renderParsedStories();
         }
-        /* --- API SETTINGS MODAL --- */
-        function toggleApiKeyModal() {
-            const modal = document.getElementById('apiKeyModal');
-            modal.classList.toggle('hidden');
-            if (!modal.classList.contains('hidden')) {
-                document.getElementById('customApiKeyInput').value = localStorage.getItem('edubridge_custom_api_key') || '';
-            }
-        }
 
-        function saveApiKeySetting() {
-            const key = document.getElementById('customApiKeyInput').value.trim();
-            localStorage.setItem('edubridge_custom_api_key', key);
-            toggleApiKeyModal();
-            alert("API Key configuration saved.");
-        }
-            if (selectedStory !== null && parsedStories[selectedStory]) {
-                const item = parsedStories[selectedStory];
+        function sendSelectedToStudio() {
+            if (window.selectedStory !== null && window.parsedStories[window.selectedStory]) {
+                const item = window.parsedStories[window.selectedStory];
                 document.getElementById('studioTopicInput').value = `${item.title} (${item.summary})`;
                 document.getElementById('explainerTopic').value = item.title;
             }
             switchTab('studioTab');
         }
 
-        /* --- GENERATE LESSON PLAN WITH GEMINI --- */
         async function generateLessonPlanWithGemini() {
             const topic = document.getElementById('studioTopicInput').value.trim();
             if (!topic) {
-                alert("Please enter or select a lesson topic first.");
+                showToast("Please enter or select a lesson topic first.", "warning");
                 return;
             }
 
@@ -781,8 +928,6 @@ Physicists proposed a novel qubit architecture built using **superfluid helium**
                 </div>
             `;
 
-            const systemPrompt = `You are a master STEM Curriculum Specialist and Instructional Designer. Generate a comprehensive, classroom-ready lesson plan based on real-world technology updates. Present the response in well-formatted Markdown with clean headers, bullet points, and code blocks if applicable.`;
-
             const userPrompt = `Create a complete, detailed lesson plan for a teacher based on this topic and settings:
 
 - Topic: ${topic}
@@ -805,7 +950,7 @@ ${incDiff ? '9. **Differentiation Strategies**: Accommodations for ELL/Support &
 
             const payload = {
                 contents: [{ parts: [{ text: userPrompt }] }],
-                systemInstruction: { parts: [{ text: systemPrompt }] }
+                systemInstruction: { parts: [{ text: "You are a master STEM Curriculum Specialist and Instructional Designer. Generate a comprehensive, classroom-ready lesson plan based on real-world technology updates." }] }
             };
 
             try {
@@ -817,123 +962,29 @@ ${incDiff ? '9. **Differentiation Strategies**: Accommodations for ELL/Support &
                 outputEl.innerHTML = marked.parse(markdownText);
                 outputEl.dataset.rawMarkdown = markdownText;
                 outputEl.dataset.topicTitle = topic;
+                showToast("Lesson plan generated!");
             } catch (err) {
                 outputEl.innerHTML = `<div class="p-4 bg-red-50 text-red-700 rounded-xl text-sm">Failed to generate lesson plan: ${err.message}</div>`;
+                showToast("Generation failed: " + err.message, "error");
             } finally {
                 genBtn.innerHTML = `<i class="fa-solid fa-wand-magic-sparkles"></i><span>Generate Complete Lesson Plan</span>`;
                 genBtn.disabled = false;
             }
         }
 
-        /* --- LESSON STORAGE & EXPORT --- */
         function copyLessonToClipboard() {
             const outputEl = document.getElementById('lessonPlanOutput');
             const raw = outputEl.dataset.rawMarkdown || outputEl.innerText;
             if (!raw) return;
 
             document.execCommand('copy');
-            alert("Lesson Plan copied to clipboard!");
+            showToast("Lesson Plan copied to clipboard!");
         }
 
-        function saveLessonToLibrary() {
-            const outputEl = document.getElementById('lessonPlanOutput');
-            const raw = outputEl.dataset.rawMarkdown;
-            const topic = outputEl.dataset.topicTitle || document.getElementById('studioTopicInput').value;
-
-            if (!raw) {
-                alert("Please generate a lesson plan first.");
-                return;
-            }
-
-            const newEntry = {
-                id: Date.now(),
-                title: topic,
-                date: new Date().toLocaleDateString(),
-                grade: document.getElementById('studioGradeSelect').value,
-                subject: document.getElementById('studioSubjectSelect').value,
-                content: raw
-            };
-
-            savedLessons.unshift(newEntry);
-            localStorage.setItem('edubridge_saved_lessons', JSON.stringify(savedLessons));
-            updateSavedCountBadge();
-            renderSavedLibrary();
-            alert("Saved to Teacher Library!");
-        }
-
-        function updateSavedCountBadge() {
-            document.getElementById('savedCountBadge').innerText = savedLessons.length;
-        }
-
-        function renderSavedLibrary() {
-            const grid = document.getElementById('libraryItemsGrid');
-            if (savedLessons.length === 0) {
-                grid.innerHTML = `
-                    <div class="col-span-full text-center py-16 text-slate-400">
-                        <i class="fa-solid fa-folder-open text-4xl mb-2 text-slate-300"></i>
-                        <p class="text-sm font-medium">No saved lessons in your library yet.</p>
-                        <p class="text-xs text-slate-400 mt-1">Generated lesson plans will appear here once saved.</p>
-                    </div>
-                `;
-                return;
-            }
-
-            grid.innerHTML = savedLessons.map((item, idx) => `
-                <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col justify-between space-y-3 hover:shadow-md transition">
-                    <div>
-                        <div class="flex items-center justify-between text-[11px] text-slate-400 mb-1">
-                            <span>${item.date}</span>
-                            <span class="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded font-bold">${item.subject}</span>
-                        </div>
-                        <h3 class="font-bold text-slate-800 text-sm line-clamp-2">${item.title}</h3>
-                        <p class="text-xs text-slate-500 mt-1">${item.grade}</p>
-                    </div>
-                    <div class="flex items-center space-x-2 pt-2 border-t border-slate-200">
-                        <button onclick="viewSavedLesson(${idx})" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs py-1.5 px-3 rounded-lg transition">
-                            View Plan
-                        </button>
-                        <button onclick="deleteSavedLesson(${idx})" class="text-xs text-red-500 hover:text-red-700 p-1.5">
-                            <i class="fa-solid fa-trash"></i>
-                        </button>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        function viewSavedLesson(idx) {
-            const item = savedLessons[idx];
-            if (!item) return;
-
-            const outputEl = document.getElementById('lessonPlanOutput');
-            outputEl.innerHTML = marked.parse(item.content);
-            outputEl.dataset.rawMarkdown = item.content;
-            outputEl.dataset.topicTitle = item.title;
-
-            document.getElementById('studioTopicInput').value = item.title;
-            switchTab('studioTab');
-        }
-
-        function deleteSavedLesson(idx) {
-            if (!confirm("Remove this lesson plan from saved library?")) return;
-            savedLessons.splice(idx, 1);
-            localStorage.setItem('edubridge_saved_lessons', JSON.stringify(savedLessons));
-            updateSavedCountBadge();
-            renderSavedLibrary();
-        }
-
-        function clearAllSavedLessons() {
-            if (!confirm("Clear all items in your library?")) return;
-            savedLessons = [];
-            localStorage.setItem('edubridge_saved_lessons', JSON.stringify([]));
-            updateSavedCountBadge();
-            renderSavedLibrary();
-        }
-
-        /* --- TAB 3: STUDENT EXPLAINER & TTS AUDIO --- */
         async function generateStudentExplanation() {
             const topic = document.getElementById('explainerTopic').value.trim();
             if (!topic) {
-                alert("Please enter a topic to explain.");
+                showToast("Please enter a topic to explain.", "warning");
                 return;
             }
 
@@ -943,7 +994,6 @@ ${incDiff ? '9. **Differentiation Strategies**: Accommodations for ELL/Support &
             btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i>Generating Student Explanation...`;
             btn.disabled = true;
 
-            const systemPrompt = "You are a fun, friendly, highly creative teacher explaining cutting-edge technology concepts to students using simple everyday analogies.";
             const userPrompt = `Explain the following technology topic for a student at this target level: ${grade}.
 Topic: ${topic}
 
@@ -954,7 +1004,7 @@ Requirements:
 
             const payload = {
                 contents: [{ parts: [{ text: userPrompt }] }],
-                systemInstruction: { parts: [{ text: systemPrompt }] }
+                systemInstruction: { parts: [{ text: "You are a fun, friendly, highly creative teacher explaining cutting-edge technology concepts to students using simple everyday analogies." }] }
             };
 
             try {
@@ -965,8 +1015,9 @@ Requirements:
 
                 document.getElementById('explainerText').innerText = text;
                 document.getElementById('explainerResultBox').classList.remove('hidden');
+                showToast("Student explanation ready!");
             } catch (err) {
-                alert("Error: " + err.message);
+                showToast("Error: " + err.message, "error");
             } finally {
                 btn.innerHTML = `<i class="fa-solid fa-lightbulb"></i><span>Create Student-Friendly Explanation</span>`;
                 btn.disabled = false;
@@ -976,14 +1027,13 @@ Requirements:
         function copyExplainerText() {
             const text = document.getElementById('explainerText').innerText;
             document.execCommand('copy');
-            alert("Student explanation copied!");
+            showToast("Student explanation copied!");
         }
 
-        /* --- GEMINI TTS AUDIO GENERATION --- */
         async function generateAudioTTS() {
             const textToSay = document.getElementById('explainerText').innerText.trim();
             if (!textToSay) {
-                alert("Please generate a student explanation first!");
+                showToast("Please generate a student explanation first!", "warning");
                 return;
             }
 
@@ -1014,7 +1064,6 @@ Requirements:
 
                 if (!audioBase64) throw new Error("No audio returned from Gemini Speech TTS.");
 
-                // Convert base64 PCM16 data into playable WAV container
                 const sampleRateMatch = mimeType.match(/rate=(\d+)/);
                 const sampleRate = sampleRateMatch ? parseInt(sampleRateMatch[1], 10) : 24000;
 
@@ -1029,15 +1078,15 @@ Requirements:
                         Your browser does not support audio playback.
                     </audio>
                 `;
+                showToast("Spoken audio synthesized!");
             } catch (err) {
-                alert("TTS Audio Error: " + err.message);
+                showToast("TTS Audio Error: " + err.message, "error");
             } finally {
                 ttsBtn.innerHTML = `<i class="fa-solid fa-play"></i><span>Generate Spoken Audio</span>`;
                 ttsBtn.disabled = false;
             }
         }
 
-        /* --- AUDIO HELPER UTILITIES --- */
         function base64ToArrayBuffer(base64) {
             const binaryString = window.atob(base64);
             const len = binaryString.length;
@@ -1065,13 +1114,13 @@ Requirements:
             view.setUint32(4, 36 + pcm16Data.length * 2, true);
             writeString(8, 'WAVE');
             writeString(12, 'fmt ');
-            view.setUint32(16, 16, true); // Subchunk1Size (16 for PCM)
-            view.setUint16(20, 1, true);  // AudioFormat (1 for PCM)
+            view.setUint32(16, 16, true);
+            view.setUint16(20, 1, true);
             view.setUint16(22, numChannels, true);
             view.setUint32(24, sampleRate, true);
             view.setUint32(28, byteRate, true);
             view.setUint16(32, blockAlign, true);
-            view.setUint16(34, 16, true); // BitsPerSample
+            view.setUint16(34, 16, true);
             writeString(36, 'data');
             view.setUint32(40, pcm16Data.length * 2, true);
 
@@ -1081,6 +1130,205 @@ Requirements:
 
             return new Blob([buffer], { type: 'audio/wav' });
         }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            loadSampleDigest();
+            updateSavedCountBadge();
+            renderSavedLibrary();
+            updateApiKeyStatusUI();
+        });
+    </script>
+
+    <!-- FIREBASE MODULE & CLOUD STORAGE INITIALIZATION -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, collection, addDoc, setDoc, deleteDoc, onSnapshot, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'edubridge-ai';
+        let db = null;
+        let auth = null;
+        let currentUser = null;
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCm7cL9Ig8PDvammUkGtGXkmI0TO5tSCCQ",
+            authDomain: "techbridgeai-5ee6a.firebaseapp.com",
+            projectId: "techbridgeai-5ee6a",
+            storageBucket: "techbridgeai-5ee6a.firebasestorage.app",
+            messagingSenderId: "540003000645",
+            appId: "1:540003000645:web:68faea1120877032701e2c",
+            measurementId: "G-PT1MBP1KFH"
+        };
+
+        function getPersistentUserId() {
+            let pid = safeGetLocalStorage('edubridge_persistent_user_id', null);
+            if (!pid) {
+                pid = 'usr_' + Math.random().toString(36).substring(2, 11) + Date.now().toString(36);
+                safeSetLocalStorage('edubridge_persistent_user_id', pid);
+            }
+            return pid;
+        }
+
+        try {
+            const app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
+
+            const initAuth = async () => {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            };
+
+            initAuth().catch(err => console.error("Auth error:", err));
+
+            onAuthStateChanged(auth, (user) => {
+                currentUser = user;
+                if (user) {
+                    setupFirestoreListener();
+                }
+            });
+        } catch (e) {
+            console.error("Firebase initialization failed:", e);
+        }
+
+        function setupFirestoreListener() {
+            if (!db || !auth.currentUser) return;
+            
+            const persistentUid = getPersistentUserId();
+            const lessonsCol = collection(db, 'artifacts', appId, 'users', persistentUid, 'lessons');
+            
+            onSnapshot(lessonsCol, (snapshot) => {
+                const cloudLessons = [];
+                snapshot.forEach((docSnap) => {
+                    cloudLessons.push({
+                        id: docSnap.id,
+                        ...docSnap.data()
+                    });
+                });
+
+                if (cloudLessons.length > 0) {
+                    cloudLessons.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+                    window.savedLessons = cloudLessons;
+                    safeSetLocalStorage('edubridge_saved_lessons', JSON.stringify(window.savedLessons));
+                } else {
+                    const localItems = JSON.parse(safeGetLocalStorage('edubridge_saved_lessons', '[]'));
+                    if (localItems.length > 0) {
+                        window.savedLessons = localItems;
+                        localItems.forEach(async (item) => {
+                            try {
+                                const itemDoc = doc(db, 'artifacts', appId, 'users', persistentUid, 'lessons', item.id);
+                                await setDoc(itemDoc, item);
+                            } catch (e) { 
+                                console.error("Cloud sync recovery error", e); 
+                            }
+                        });
+                    }
+                }
+
+                if (typeof updateSavedCountBadge === 'function') updateSavedCountBadge();
+                if (typeof renderSavedLibrary === 'function') renderSavedLibrary();
+            }, (error) => {
+                console.error("Firestore snapshot error:", error);
+                window.savedLessons = JSON.parse(safeGetLocalStorage('edubridge_saved_lessons', '[]'));
+                if (typeof updateSavedCountBadge === 'function') updateSavedCountBadge();
+                if (typeof renderSavedLibrary === 'function') renderSavedLibrary();
+            });
+        }
+
+        // Global Save Function
+        window.saveLessonToLibrary = async function() {
+            const outputEl = document.getElementById('lessonPlanOutput');
+            const raw = outputEl ? outputEl.dataset.rawMarkdown : null;
+            const topic = (outputEl && outputEl.dataset.topicTitle) || document.getElementById('studioTopicInput').value;
+
+            if (!raw) {
+                showToast("Please generate a lesson plan first.", "warning");
+                return;
+            }
+
+            const newEntry = {
+                id: Date.now().toString(),
+                title: topic,
+                date: new Date().toLocaleDateString(),
+                grade: document.getElementById('studioGradeSelect').value,
+                subject: document.getElementById('studioSubjectSelect').value,
+                content: raw,
+                timestamp: Date.now()
+            };
+
+            window.savedLessons = window.savedLessons.filter(item => item.id !== newEntry.id);
+            window.savedLessons.unshift(newEntry);
+            safeSetLocalStorage('edubridge_saved_lessons', JSON.stringify(window.savedLessons));
+            
+            if (typeof updateSavedCountBadge === 'function') updateSavedCountBadge();
+            if (typeof renderSavedLibrary === 'function') renderSavedLibrary();
+
+            if (db && auth.currentUser) {
+                try {
+                    const persistentUid = getPersistentUserId();
+                    const lessonDocRef = doc(db, 'artifacts', appId, 'users', persistentUid, 'lessons', newEntry.id);
+                    await setDoc(lessonDocRef, newEntry);
+                    showToast("Saved to Library & Cloud!");
+                } catch (err) {
+                    console.error("Save error:", err);
+                    showToast("Saved to local library!", "warning");
+                }
+            } else {
+                showToast("Saved to local library!");
+            }
+        };
+
+        // Global Delete Function
+        window.deleteSavedLesson = function(id) {
+            showConfirmModal("Are you sure you want to remove this lesson plan from your library?", async () => {
+                window.savedLessons = window.savedLessons.filter(item => item.id !== id);
+                safeSetLocalStorage('edubridge_saved_lessons', JSON.stringify(window.savedLessons));
+                
+                if (typeof updateSavedCountBadge === 'function') updateSavedCountBadge();
+                if (typeof renderSavedLibrary === 'function') renderSavedLibrary();
+
+                if (db && auth.currentUser) {
+                    try {
+                        const persistentUid = getPersistentUserId();
+                        const lessonRef = doc(db, 'artifacts', appId, 'users', persistentUid, 'lessons', id);
+                        await deleteDoc(lessonRef);
+                    } catch (err) {
+                        console.error("Cloud delete error:", err);
+                    }
+                }
+                showToast("Lesson removed.");
+            });
+        };
+
+        // Global Clear All Function
+        window.clearAllSavedLessons = function() {
+            showConfirmModal("Are you sure you want to clear all items in your library?", async () => {
+                window.savedLessons = [];
+                safeSetLocalStorage('edubridge_saved_lessons', JSON.stringify([]));
+                
+                if (typeof updateSavedCountBadge === 'function') updateSavedCountBadge();
+                if (typeof renderSavedLibrary === 'function') renderSavedLibrary();
+
+                if (db && auth.currentUser) {
+                    try {
+                        const persistentUid = getPersistentUserId();
+                        const lessonsCol = collection(db, 'artifacts', appId, 'users', persistentUid, 'lessons');
+                        const snapshot = await getDocs(lessonsCol);
+                        const deletePromises = [];
+                        snapshot.forEach((docSnap) => {
+                            deletePromises.push(deleteDoc(doc(db, 'artifacts', appId, 'users', persistentUid, 'lessons', docSnap.id)));
+                        });
+                        await Promise.all(deletePromises);
+                    } catch (err) {
+                        console.error("Clear error:", err);
+                    }
+                }
+                showToast("Library cleared.");
+            });
+        };
     </script>
 </body>
 </html>
